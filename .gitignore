@@ -2,3 +2,7 @@
 *.xml
 *.iml
 *.plt
+.DS_Store
+.DS_Store
+*.pdf
+.DS_Store
