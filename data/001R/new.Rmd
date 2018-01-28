@@ -9,6 +9,7 @@ library(lubridate)
 ```{r load trjactory and labels}
 
 one_trajectory <- read.csv('trajectory/2007-05-07-GPS.csv', skip = 6)
+
 trajectory_labels <- read.csv('labels.txt', sep = '\t')
 ```
 
@@ -43,30 +44,135 @@ trajectory_labels$intervals
 
 
 ```{r}
+
+#  very slow sequential blocking loop
 one_trajectory$y <- '0'
 
-for (num in 1:nrow(trajectory_labels) ) {
+ptm <- proc.time()
+for (num in 1:nrow((trajectory_labels)) ) {
   lrow <- trajectory_labels[num,]
-  for (num2 in 1:nrow(one_trajectory) ) {
+  for (num2 in 1:nrow(head(one_trajectory, 50)) ) { # notice only using 50 and not the 3000
     trow <- one_trajectory[num2, ]
-    if (trow$dt_ %within% lrow$intervals) {
-      # print("trajectory Date:");  print(trow$Date_)
-      # print("trajectory Time:");  print(trow$Time_)
-      # print("labels interval:");   print(lrow$intervals)
-      # print("labels start time:");  print(lrow$Start.Time)
-      # print("labels end time:");  print(lrow$End.Time)
-      # print("------------------------------------------------")
-      trow$y <- lrow$Transportation.Modes
-    } else {
-      # print("nothing to see here")
-    }
     
+    if (!is.na(lrow$intervals) && lrow$intervals == 'NA--NA') {
+      if (trow$dt_ %within% lrow$intervals) {
+        one_trajectory[num2, ]$y <- as.character(lrow$Transportation.Modes)
+      } 
+    }
   }
+}
+
+proc.time() - ptm
+
+# write.csv(x = one_trajectory, file = "trajectory_with_labels.csv")
+
+```
+
+```{r}
+
+one_trajectory$y <- '0'
+
+
+ptm <- proc.time()
+for (num in 1:nrow((trajectory_labels)) ) {
+  one_trajectory$y[one_trajectory$dt_  %within% trajectory_labels[num,]$intervals] <- as.character(lrow$Transportation.Modes)
+}
+proc.time() - ptm
+
+
+ # visualise data 
+plot(as.factor(one_trajectory$y))
+plot(as.factor(trajectory_labels$Transportation.Modes))
+table(one_trajectory$y)
+
+```
+
+
+
+```{r function for taking in new trajectory data and labels and labelling }
+
+load_trajectories <- function(filename) {
+  loaded_trajectories <- read.csv(filename, skip = 6, skipNul = TRUE)
+  colnames(loaded_trajectories) <- c('Lat','Long', 'Ignore', 'Altitude', 'DateP', 'Date_', 'Time_')
+  return(loaded_trajectories)
+}
+
+load_labels <- function(fn) {
+  print(filename)
+  return(read.csv(fn, skipNul = TRUE))
+  return(labels)
+}
+
+define_label_intervals <- function(loaded_labels) {
+  # interval start and end time
+  loaded_labels$interval_start <- as.POSIXct(paste(as_date(loaded_labels$Date), (loaded_labels$Start.Time)), format="%Y-%m-%d %H:%M:%S")
+  
+  loaded_labels$interval_end <- as.POSIXct(paste(as_date(loaded_labels$Date), (loaded_labels$End.Time)), format="%Y-%m-%d %H:%M:%S")
+  
+  loaded_labels$intervals <- lubridate::interval(trajectory_labels$interval_start, trajectory_labels$interval_end )
+  
+  return(loaded_labels)
+
+}
+
+define_trajectory_dt <- function(loaded_trajectories) {
+  loaded_trajectories$dt_ <- as.POSIXct(paste(as_date(loaded_trajectories$Date_), (loaded_trajectories$Time_)), format="%Y-%m-%d %H:%M:%S")  
+  return(loaded_trajectories)
+}
+
+label_trajectories <- function(trajectories, labels) {
+  tj <- trajectories 
+  tj$y <- 0
+  for (num in 1:nrow(labels)) {
+    lrow <- labels[num,]
+    tj$y[tj$dt_  %within% lrow$intervals] <- as.character(lrow$Transportation.Modes)
+  }
+  
+  return (tj)
   
 }
 
 
-write.csv(x = one_trajectory, file = "trajectory_with_labels.csv")
+save_visualise_trajectories <- function(trajectories, labels, filename) {
+  write.csv(trajectories, filename)
+  print("Done Saved As", filename)
+  plot(as.factor(trajectories$y))
+  plot(as.factor(labels$Transportation.Modes))
+  table(trajectories$y)
+
+}
+
+```
+
+
+```{r}
+
+library(readr)
+library(tidyverse)
+library(lubridate)
+# temp = 
+files = list.files(full.names = TRUE, path = "trajectory", pattern="*.csv", include.dirs = TRUE)
+lab_file = list.files(pattern="*.csv")
+
+
+
+for (filename in head(files)) {
+  tjs <- load_trajectories(filename)
+  tjs <- define_trajectory_dt(tjs)
+  
+  tj_labels <- load_labels(lab_file)
+  tj_labels <- define_label_intervals(tj_labels)
+  
+  tjs <- label_trajectories(tjs, tj_labels)
+  
+  save_visualise_trajectories(tjs, tj_labels, filename)
+
+}
+
+
+```
+
+
 
 ```
 
