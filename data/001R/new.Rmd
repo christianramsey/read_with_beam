@@ -1,0 +1,72 @@
+```{r}
+
+library(readr)
+library(tidyverse)
+library(lubridate)
+
+```
+
+```{r load trjactory and labels}
+
+one_trajectory <- read.csv('trajectory/2007-05-07-GPS.csv', skip = 6)
+trajectory_labels <- read.csv('labels.txt', sep = '\t')
+```
+
+```{r add colnames}
+
+colnames(one_trajectory) <- c('Lat','Long', 'Ignore', 'Altitude', 'DateP', 'Date_', 'Time_')
+
+
+
+# interval start and end time
+
+trajectory_labels$interval_start <- as.POSIXct(paste(as_date(trajectory_labels$Date), (trajectory_labels$Start.Time)), format="%Y-%m-%d %H:%M:%S")
+
+trajectory_labels$interval_end <- as.POSIXct(paste(as_date(trajectory_labels$Date), (trajectory_labels$End.Time)), format="%Y-%m-%d %H:%M:%S")
+
+
+
+# seup 
+one_trajectory$dt_ <- as.POSIXct(paste(as_date(one_trajectory$Date_), (one_trajectory$Time_)), format="%Y-%m-%d %H:%M:%S")
+
+head(one_trajectory)
+
+
+trajectory_labels$Date
+trajectory_labels$Start.Time
+
+trajectory_labels$intervals <- lubridate::interval(trajectory_labels$interval_start, trajectory_labels$interval_end )
+
+trajectory_labels$intervals
+
+```
+
+
+```{r}
+one_trajectory$y <- '0'
+
+for (num in 1:nrow(trajectory_labels) ) {
+  lrow <- trajectory_labels[num,]
+  for (num2 in 1:nrow(one_trajectory) ) {
+    trow <- one_trajectory[num2, ]
+    if (trow$dt_ %within% lrow$intervals) {
+      # print("trajectory Date:");  print(trow$Date_)
+      # print("trajectory Time:");  print(trow$Time_)
+      # print("labels interval:");   print(lrow$intervals)
+      # print("labels start time:");  print(lrow$Start.Time)
+      # print("labels end time:");  print(lrow$End.Time)
+      # print("------------------------------------------------")
+      trow$y <- lrow$Transportation.Modes
+    } else {
+      # print("nothing to see here")
+    }
+    
+  }
+  
+}
+
+
+write.csv(x = one_trajectory, file = "trajectory_with_labels.csv")
+
+```
+
