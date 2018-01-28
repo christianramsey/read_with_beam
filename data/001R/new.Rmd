@@ -135,12 +135,17 @@ label_trajectories <- function(trajectories, labels) {
 
 save_visualise_trajectories <- function(trajectories, labels, filename) {
   labelled_trajectories <- filter(tjs, y != 0)
-  unlabelled_trajectories <- filter(tjs, y == 0)
+  
+  # for logging unlabbelled data
+  # unlabelled_trajectories <- filter(tjs, y == 0)
+  
   if (nrow(labelled_trajectories) > 0) {
     write.csv(labelled_trajectories, paste("data_w_labels/",filename))
     print(paste("Done Saved As ", filename))  
   } else {
-    write.csv(unlabelled_trajectories, paste("data_wo_labels/",filename))
+   
+     # use if you want unlabelled data
+    # write.csv(unlabelled_trajectories, paste("data_wo_labels/",filename))
     print(paste("FAILED Saved As ", filename))  
   }
   
