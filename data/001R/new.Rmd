@@ -99,7 +99,7 @@ load_trajectories <- function(filename) {
 
 load_labels <- function(fn) {
   print(filename)
-  return(read.csv(fn, skipNul = TRUE))
+  return(read.csv(fn,  sep = "\t"))
   return(labels)
 }
 
@@ -109,7 +109,7 @@ define_label_intervals <- function(loaded_labels) {
   
   loaded_labels$interval_end <- as.POSIXct(paste(as_date(loaded_labels$Date), (loaded_labels$End.Time)), format="%Y-%m-%d %H:%M:%S")
   
-  loaded_labels$intervals <- lubridate::interval(trajectory_labels$interval_start, trajectory_labels$interval_end )
+  loaded_labels$intervals <- lubridate::interval(loaded_labels$interval_start, loaded_labels$interval_end )
   
   return(loaded_labels)
 
@@ -134,11 +134,19 @@ label_trajectories <- function(trajectories, labels) {
 
 
 save_visualise_trajectories <- function(trajectories, labels, filename) {
-  write.csv(trajectories, filename)
-  print("Done Saved As", filename)
-  plot(as.factor(trajectories$y))
-  plot(as.factor(labels$Transportation.Modes))
-  table(trajectories$y)
+  labelled_trajectories <- filter(tjs, y != 0)
+  unlabelled_trajectories <- filter(tjs, y == 0)
+  if (nrow(labelled_trajectories) > 0) {
+    write.csv(labelled_trajectories, paste("data_w_labels/",filename))
+    print(paste("Done Saved As ", filename))  
+  } else {
+    write.csv(unlabelled_trajectories, paste("data_wo_labels/",filename))
+    print(paste("FAILED Saved As ", filename))  
+  }
+  
+  # plot(as.factor(trajectories$y))
+  # plot(as.factor(labels$Transportation.Modes))
+  # table(trajectories$y)
 
 }
 
@@ -152,11 +160,12 @@ library(tidyverse)
 library(lubridate)
 # temp = 
 files = list.files(full.names = TRUE, path = "trajectory", pattern="*.csv", include.dirs = TRUE)
-lab_file = list.files(pattern="*.csv")
+lab_file = list.files(pattern="*.txt")
 
 
-
-for (filename in head(files)) {
+for (filename in (files)) {
+  tjs <- NULL
+  tj_labels <- NULL
   tjs <- load_trajectories(filename)
   tjs <- define_trajectory_dt(tjs)
   
@@ -165,7 +174,10 @@ for (filename in head(files)) {
   
   tjs <- label_trajectories(tjs, tj_labels)
   
-  save_visualise_trajectories(tjs, tj_labels, filename)
+  save_file_name <- paste(Sys.Date(), filename)
+  save_file_name <- gsub('[-/ ]+','',save_file_name)
+  
+  save_visualise_trajectories(tjs, tj_labels,  save_file_name)
 
 }
 
@@ -173,6 +185,4 @@ for (filename in head(files)) {
 ```
 
 
-
-```
 
