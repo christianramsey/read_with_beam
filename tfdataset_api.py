@@ -26,7 +26,9 @@ from tensorflow.python.estimator.model_fn import ModeKeys as Modes
 # https://www.tensorflow.org/tutorials/wide_and_deep/
 
 # Define the format of your input data including unused columns
-CSV_COLUMNS = ['age', 'workclass', 'fnlwgt', 'education', 'education_num',
+
+"","Lat","Long","Ignore","Altitude","DateP","Date_","Time_","dt_","y"
+CSV_COLUMNS = ['index', 'workclass', 'fnlwgt', 'education', 'education_num',
                'marital_status', 'occupation', 'relationship', 'race', 'gender',
                'capital_gain', 'capital_loss', 'hours_per_week',
                'native_country', 'income_bracket']
